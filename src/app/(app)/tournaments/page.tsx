@@ -24,7 +24,7 @@ function CategoryCard({ category }: { category: { name: string; imageUrl: string
 
 export default function TournamentsPage() {
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       <div className="bg-card text-card-foreground rounded-lg p-4 space-y-4">
         <h2 className="text-center text-lg font-bold tracking-wider text-primary">
           <span role="img" aria-label="fire">🔥</span> WELCOME TO SJ BATTLE <span role="img" aria-label="fire">🔥</span>
@@ -83,7 +83,6 @@ export default function TournamentsPage() {
             }} 
           />
         ))}
-        {/* Add more categories to fill the grid based on the design */}
         <CategoryCard category={{ name: 'BATTLE ROYALE (Duo/Team)', imageUrl: 'https://placehold.co/400x400.png', imageHint: 'team battle' }} />
         <CategoryCard category={{ name: 'LW LOW ENTRY', imageUrl: 'https://placehold.co/400x400.png', imageHint: 'low entry fee' }} />
         <CategoryCard category={{ name: 'CS 1 Vs 1', imageUrl: 'https://placehold.co/400x400.png', imageHint: 'one on one' }} />

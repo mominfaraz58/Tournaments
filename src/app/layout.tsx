@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { WalletProvider } from '@/context/wallet-provider';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
+import { AuthProvider } from '@/context/auth-provider';
 
 export const metadata: Metadata = {
   title: 'Victory Fire',
@@ -24,10 +25,12 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <WalletProvider>
-          {children}
-          <Toaster />
-        </WalletProvider>
+        <AuthProvider>
+          <WalletProvider>
+            {children}
+            <Toaster />
+          </WalletProvider>
+        </AuthProvider>
       </body>
     </html>
   );

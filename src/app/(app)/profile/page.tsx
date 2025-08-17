@@ -18,6 +18,8 @@ import {
   Gamepad2,
 } from "lucide-react";
 import { useWallet } from "@/context/wallet-provider";
+import { useAuth } from "@/context/auth-provider";
+
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,11 +65,12 @@ const MenuItem = ({
 
 export default function ProfilePage() {
   const { diamonds, matchesWon } = useWallet();
+  const { user, logout } = useAuth();
   const kills = 0; // Placeholder for kills
-  const user = {
-    name: "momin",
-    phone: "+923114714991",
-  };
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   const menuItems = [
     { icon: UserCog, label: "Edit Profile", href: "#" },
@@ -82,13 +85,14 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col items-center text-center space-y-2">
         <Avatar className="w-24 h-24 text-4xl bg-primary">
-          <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarFallback>{user.fullName.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <h1 className="text-2xl font-bold">{user.name}</h1>
-        <p className="text-muted-foreground">{user.phone}</p>
+        <h1 className="text-2xl font-bold">{user.fullName}</h1>
+        <p className="text-muted-foreground">{user.mobileNo}</p>
+        <p className="text-sm text-muted-foreground">Referral Code: {user.referralCode}</p>
       </div>
 
       <div className="flex justify-around gap-4">
@@ -101,6 +105,9 @@ export default function ProfilePage() {
         {menuItems.map((item) => (
           <MenuItem key={item.label} {...item} />
         ))}
+         <Button onClick={logout} variant="destructive" className="w-full">
+            Logout
+        </Button>
       </div>
     </div>
   );

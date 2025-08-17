@@ -11,9 +11,15 @@ export type Tournament = {
 
 export type User = {
   id: string;
-  name: string;
+  fullName: string;
+  inGameName: string;
+  uid: string;
+  mobileNo: string;
+  password?: string; // Should not be stored in client-side state long-term
+  referralCode: string;
   winnings: number;
 };
+
 
 export type LeaderboardEntry = {
   rank: number;
