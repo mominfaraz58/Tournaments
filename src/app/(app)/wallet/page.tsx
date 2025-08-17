@@ -47,11 +47,22 @@ const SecondaryButton = ({ label, icon: Icon }: { label: string, icon: React.Ele
 );
 
 export default function WalletPage() {
-  const { funds, diamonds, matchesWon } = useWallet();
+  const { funds, diamonds, matchesWon, withdrawDiamonds } = useWallet();
   const [activeTab, setActiveTab] = useState("deposit");
   const [depositType, setDepositType] = useState("paymentId");
   const [paymentId, setPaymentId] = useState("");
   const [addDiamondAmount, setAddDiamondAmount] = useState(100);
+
+  const [withdrawAmount, setWithdrawAmount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("easypaisa");
+  const [accountNumber, setAccountNumber] = useState("");
+  
+  const exchangeRate = 1.0;
+  const calculatedPk = (withdrawAmount * exchangeRate).toFixed(2);
+
+  const handleWithdraw = () => {
+    withdrawDiamonds(withdrawAmount, `acc: ${accountNumber} (${paymentMethod})`);
+  };
 
   return (
     <div className="p-4 space-y-4">
@@ -119,9 +130,35 @@ export default function WalletPage() {
             </div>
           )}
            {activeTab === 'withdraw' && (
-            <div className="space-y-6 text-center">
+            <div className="space-y-6">
               <h2 className="text-3xl font-bold flex items-center justify-center gap-2">WITHDRAW <Gem className="text-cyan-400"/></h2>
-               <p className="text-muted-foreground">Withdrawal functionality coming soon!</p>
+              
+              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="flex justify-center gap-6">
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="easypaisa" id="easypaisa" />
+                    <Label htmlFor="easypaisa" className="text-lg">Easypaisa</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="jazzcash" id="jazzcash" />
+                    <Label htmlFor="jazzcash" className="text-lg">Jazzcash</Label>
+                </div>
+              </RadioGroup>
+
+              <div className="space-y-2">
+                <Label htmlFor="accountNumber">Account Number</Label>
+                <Input id="accountNumber" type="text" placeholder="e.g. 03123456789" className="bg-background h-12 text-lg" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="withdrawAmount">Amount (Diamonds)</Label>
+                <Input id="withdrawAmount" type="number" placeholder="Enter diamond amount" className="bg-background h-12 text-lg" value={withdrawAmount} onChange={(e) => setWithdrawAmount(Number(e.target.value))} />
+              </div>
+              
+              <div className="text-center text-lg">
+                You will receive: <span className="font-bold text-primary">Rs. {calculatedPk}</span>
+              </div>
+             
+              <Button size="lg" className="w-full bg-foreground text-background font-bold hover:bg-gray-300 h-12" onClick={handleWithdraw}>SUBMIT WITHDRAWAL</Button>
             </div>
           )}
         </CardContent>
