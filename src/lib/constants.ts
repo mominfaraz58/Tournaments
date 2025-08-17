@@ -31,16 +31,6 @@ export const TOURNAMENTS: Tournament[] = [
     imageUrl: 'https://placehold.co/400x400.png',
     imageHint: 'squad battle red',
   },
-  {
-    id: 'lahore-legends-4',
-    name: 'Lone Wolf (1v1)',
-    prizePool: 15000,
-    entryFee: 750,
-    format: '4v4 Squad Battle',
-    date: 'August 20, 2024',
-    imageUrl: 'https://placehold.co/400x400.png',
-    imageHint: 'one on one purple',
-  },
 ];
 
 export const LEADERBOARD: LeaderboardEntry[] = [
