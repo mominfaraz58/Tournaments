@@ -16,3 +16,11 @@ export type LeaderboardEntry = {
   kills: number;
   points: number;
 };
+
+export type Transaction = {
+  id: string;
+  type: 'deposit' | 'withdraw';
+  amount: number;
+  date: string;
+  details?: string;
+};

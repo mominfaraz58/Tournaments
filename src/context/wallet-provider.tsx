@@ -2,12 +2,14 @@
 
 import { useToast } from "@/hooks/use-toast";
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import type { Transaction } from "@/lib/types";
 
 interface WalletState {
   funds: number;
   diamonds: number;
   matchesWon: number;
-  depositFunds: (amount: number) => void;
+  transactions: Transaction[];
+  depositFunds: (amount: number, paymentId: string) => void;
   withdrawDiamonds: (amount: number, gameId: string) => void;
   registerForTournament: (fee: number) => boolean;
   addMatchWin: (prize: number) => void;
@@ -19,10 +21,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [funds, setFunds] = useState(2000); // Initial funds for demo
   const [diamonds, setDiamonds] = useState(500); // Initial diamonds for demo
   const [matchesWon, setMatchesWon] = useState(5); // Initial matches won for demo
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const { toast } = useToast();
 
-  const depositFunds = (amount: number) => {
+  const addTransaction = (transaction: Omit<Transaction, 'date'>) => {
+    const newTransaction = { ...transaction, date: new Date().toISOString() };
+    setTransactions(prev => [newTransaction, ...prev]);
+    // Here you would typically send the transaction to your backend/admin panel
+    console.log("New Transaction to send to admin:", newTransaction);
+  }
+
+  const depositFunds = (amount: number, paymentId: string) => {
     setFunds((prev) => prev + amount);
+    addTransaction({ id: paymentId, type: 'deposit', amount });
     toast({
       title: "Deposit Successful",
       description: `Rs. ${amount} has been added to your wallet.`,
@@ -30,6 +41,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const withdrawDiamonds = (amount: number, gameId: string) => {
+    if (amount <= 0) {
+       toast({
+        variant: "destructive",
+        title: "Withdrawal Failed",
+        description: "Please enter a valid amount.",
+      });
+      return;
+    }
     if (amount > diamonds) {
       toast({
         variant: "destructive",
@@ -39,6 +58,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     setDiamonds((prev) => prev - amount);
+    const withdrawalId = `wd_${Date.now()}`;
+    addTransaction({ id: withdrawalId, type: 'withdraw', amount, details: gameId });
     toast({
       title: "Withdrawal Successful",
       description: `${amount} diamonds have been sent to Game ID: ${gameId}.`,
@@ -73,7 +94,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <WalletContext.Provider
-      value={{ funds, diamonds, matchesWon, depositFunds, withdrawDiamonds, registerForTournament, addMatchWin }}
+      value={{ funds, diamonds, matchesWon, transactions, depositFunds, withdrawDiamonds, registerForTournament, addMatchWin }}
     >
       {children}
     </WalletContext.Provider>
