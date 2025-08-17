@@ -11,7 +11,7 @@ const navItems = [
   { href: "/wallet", label: "Wallet", icon: Wallet },
   { href: "/leaderboard", label: "Leaderboard", icon: Users },
   { href: "/refer", label: "Refer & Earn", icon: Gift },
-  { href: "/recommendations", label: "AI Rec", icon: Bot },
+  { href: "/profile", label: "Profile", icon: User },
 ];
 
 export function BottomNav() {
