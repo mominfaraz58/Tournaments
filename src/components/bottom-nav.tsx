@@ -1,16 +1,17 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Wallet, Users, User, Trophy, Bot } from "lucide-react";
+import { Home, Wallet, Users, User, Trophy, Bot, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/tournaments", label: "Home", icon: Home },
   { href: "/wallet", label: "Wallet", icon: Wallet },
   { href: "/leaderboard", label: "Leaderboard", icon: Users },
+  { href: "/refer", label: "Refer & Earn", icon: Gift },
   { href: "/recommendations", label: "AI Rec", icon: Bot },
-  { href: "/profile", label: "Profile", icon: User },
 ];
 
 export function BottomNav() {
@@ -23,7 +24,7 @@ export function BottomNav() {
         return (
           <Link href={item.href} key={item.href} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-full h-full">
             <item.icon className={cn("h-6 w-6", isActive && "text-primary")} />
-            <span className={cn("text-xs font-medium", isActive && "text-primary")}>
+            <span className={cn("text-xs font-medium text-center", isActive && "text-primary")}>
               {item.label}
             </span>
           </Link>
