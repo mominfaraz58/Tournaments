@@ -6,9 +6,11 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 interface WalletState {
   funds: number;
   diamonds: number;
+  matchesWon: number;
   depositFunds: (amount: number) => void;
   withdrawDiamonds: (amount: number, gameId: string) => void;
   registerForTournament: (fee: number) => boolean;
+  addMatchWin: (prize: number) => void;
 }
 
 const WalletContext = createContext<WalletState | undefined>(undefined);
@@ -16,6 +18,7 @@ const WalletContext = createContext<WalletState | undefined>(undefined);
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [funds, setFunds] = useState(2000); // Initial funds for demo
   const [diamonds, setDiamonds] = useState(500); // Initial diamonds for demo
+  const [matchesWon, setMatchesWon] = useState(5); // Initial matches won for demo
   const { toast } = useToast();
 
   const depositFunds = (amount: number) => {
@@ -58,10 +61,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     });
     return true;
   };
+  
+  const addMatchWin = (prize: number) => {
+    setMatchesWon((prev) => prev + 1);
+    setDiamonds((prev) => prev + prize);
+    toast({
+      title: "Match Won!",
+      description: `You won ${prize} diamonds! They have been added to your winning balance.`,
+    });
+  };
 
   return (
     <WalletContext.Provider
-      value={{ funds, diamonds, depositFunds, withdrawDiamonds, registerForTournament }}
+      value={{ funds, diamonds, matchesWon, depositFunds, withdrawDiamonds, registerForTournament, addMatchWin }}
     >
       {children}
     </WalletContext.Provider>

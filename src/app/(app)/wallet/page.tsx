@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CircleDollarSign, Gem, Landmark, Wallet, ShieldCheck, BarChart, History, Repeat, Share2, MessageCircle } from "lucide-react";
+import { CircleDollarSign, Gem, Landmark, Wallet, ShieldCheck, BarChart, History, Repeat, Share2, MessageCircle, Trophy } from "lucide-react";
 import { useWallet } from "@/context/wallet-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-const InfoCard = ({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) => (
+const InfoCard = ({ title, value, icon: Icon, valueIcon: ValueIcon }: { title: string, value: string | number, icon: React.ElementType, valueIcon?: React.ElementType }) => (
   <Card className="bg-card/80 text-center p-3 flex-1">
     <CardContent className="p-0">
       <Icon className="mx-auto mb-1 h-7 w-7 text-primary" />
       <p className="text-sm font-semibold text-muted-foreground">{title}</p>
       <div className="flex items-center justify-center gap-1">
-        <Gem className="size-4 text-cyan-400"/>
+        {ValueIcon && <ValueIcon className="size-4 text-cyan-400"/>}
         <p className="text-lg font-bold">{value}</p>
       </div>
     </CardContent>
@@ -47,7 +47,7 @@ const SecondaryButton = ({ label, icon: Icon }: { label: string, icon: React.Ele
 );
 
 export default function WalletPage() {
-  const { funds, diamonds, depositFunds, withdrawDiamonds } = useWallet();
+  const { funds, diamonds, matchesWon } = useWallet();
   const [activeTab, setActiveTab] = useState("deposit");
   const [depositType, setDepositType] = useState("paymentId");
   const [paymentId, setPaymentId] = useState("");
@@ -55,9 +55,10 @@ export default function WalletPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <div className="grid grid-cols-3 gap-2">
-        <InfoCard title="Deposit Balance" value={funds.toLocaleString()} icon={Landmark} />
-        <InfoCard title="Winning Balance" value={diamonds.toLocaleString()} icon={ShieldCheck} />
+      <div className="grid grid-cols-2 gap-2">
+        <InfoCard title="Deposit Balance" value={funds.toLocaleString()} icon={Landmark} valueIcon={CircleDollarSign} />
+        <InfoCard title="Winning Balance" value={diamonds.toLocaleString()} icon={ShieldCheck} valueIcon={Gem} />
+        <InfoCard title="Live Player Wins" value={matchesWon.toLocaleString()} icon={Trophy} />
         <InfoCard title="Exchange Rate" value="1 = 1.0 PK" icon={BarChart} />
       </div>
 
