@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useToast } from "@/hooks/use-toast";
@@ -19,9 +20,9 @@ interface WalletState {
 const WalletContext = createContext<WalletState | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
-  const [funds, setFunds] = useState(2000); // Initial funds for demo
-  const [diamonds, setDiamonds] = useState(500); // Initial diamonds for demo
-  const [matchesWon, setMatchesWon] = useState(5); // Initial matches won for demo
+  const [funds, setFunds] = useState(0); // Initial funds for demo
+  const [diamonds, setDiamonds] = useState(0); // Initial diamonds for demo
+  const [matchesWon, setMatchesWon] = useState(0); // Initial matches won for demo
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const { toast } = useToast();
 
