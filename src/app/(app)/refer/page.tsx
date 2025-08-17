@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowRight, Copy, Gift, UserPlus, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/auth-provider";
 
 const Step = ({ icon: Icon, label }: { icon: React.ElementType, label: string }) => (
     <div className="flex flex-col items-center gap-2">
@@ -18,10 +19,12 @@ const Step = ({ icon: Icon, label }: { icon: React.ElementType, label: string })
 
 export default function ReferPage() {
     const { toast } = useToast();
-    const referralCode = "M0538";
+    const { user } = useAuth();
+    const referralCode = user?.referralCode || "LOADING...";
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(referralCode);
+        if (!user) return;
+        navigator.clipboard.writeText(user.referralCode);
         toast({
             title: "Copied!",
             description: "Referral code copied to clipboard.",
@@ -52,7 +55,7 @@ export default function ReferPage() {
                         <h3 className="text-lg font-semibold mb-2">YOUR REFERRAL CODE</h3>
                         <div className="inline-flex items-center gap-2 bg-muted p-2 px-4 rounded-lg border-2 border-dashed border-primary">
                             <span className="text-2xl font-bold tracking-widest">{referralCode}</span>
-                            <Button variant="ghost" size="icon" onClick={copyToClipboard}>
+                            <Button variant="ghost" size="icon" onClick={copyToClipboard} disabled={!user}>
                                 <Copy className="size-5" />
                             </Button>
                         </div>
