@@ -13,6 +13,7 @@ interface WalletState {
   withdrawDiamonds: (amount: number, gameId: string) => void;
   registerForTournament: (fee: number) => boolean;
   addMatchWin: (prize: number) => void;
+  convertWinningsToFunds: (amount: number) => void;
 }
 
 const WalletContext = createContext<WalletState | undefined>(undefined);
@@ -92,9 +93,36 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const convertWinningsToFunds = (amount: number) => {
+    if (amount <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Conversion Failed",
+        description: "Please enter a valid amount.",
+      });
+      return;
+    }
+    if (amount > diamonds) {
+      toast({
+        variant: "destructive",
+        title: "Conversion Failed",
+        description: "Insufficient winning balance.",
+      });
+      return;
+    }
+    setDiamonds((prev) => prev - amount);
+    setFunds((prev) => prev + amount);
+    const convertId = `conv_${Date.now()}`;
+    addTransaction({ id: convertId, type: 'convert', amount });
+    toast({
+      title: "Conversion Successful",
+      description: `${amount} diamonds have been converted to your deposit balance.`,
+    });
+  };
+
   return (
     <WalletContext.Provider
-      value={{ funds, diamonds, matchesWon, transactions, depositFunds, withdrawDiamonds, registerForTournament, addMatchWin }}
+      value={{ funds, diamonds, matchesWon, transactions, depositFunds, withdrawDiamonds, registerForTournament, addMatchWin, convertWinningsToFunds }}
     >
       {children}
     </WalletContext.Provider>

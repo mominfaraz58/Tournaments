@@ -19,7 +19,7 @@ export type LeaderboardEntry = {
 
 export type Transaction = {
   id: string;
-  type: 'deposit' | 'withdraw';
+  type: 'deposit' | 'withdraw' | 'convert';
   amount: number;
   date: string;
   details?: string;

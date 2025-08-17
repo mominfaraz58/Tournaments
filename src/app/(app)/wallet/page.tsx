@@ -77,8 +77,8 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
             <p className="text-sm text-muted-foreground">{new Date(tx.date).toLocaleString()}</p>
             <p className="text-xs text-muted-foreground">ID: {tx.id}</p>
           </div>
-          <div className={`font-bold text-lg ${tx.type === 'deposit' ? 'text-green-500' : 'text-red-500'}`}>
-            {tx.type === 'deposit' ? '+' : '-'} {tx.amount.toLocaleString()} <Gem className="inline size-4"/>
+          <div className={`font-bold text-lg ${tx.type === 'deposit' || tx.type === 'convert' ? 'text-green-500' : 'text-red-500'}`}>
+            {tx.type === 'deposit' || tx.type === 'convert' ? '+' : '-'} {tx.amount.toLocaleString()} <Gem className="inline size-4"/>
           </div>
         </Card>
       ))}
@@ -87,9 +87,9 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
 }
 
 export default function WalletPage() {
-  const { funds, diamonds, matchesWon, withdrawDiamonds, depositFunds, transactions } = useWallet();
+  const { funds, diamonds, withdrawDiamonds, depositFunds, transactions, convertWinningsToFunds } = useWallet();
   const [activeTab, setActiveTab] = useState("deposit");
-  const [historyFilter, setHistoryFilter] = useState<"deposit" | "withdraw">("deposit");
+  const [historyFilter, setHistoryFilter] = useState<"deposit" | "withdraw" | "convert">("deposit");
 
   const [depositType, setDepositType] = useState("paymentId");
   const [paymentId, setPaymentId] = useState("");
@@ -99,6 +99,8 @@ export default function WalletPage() {
   const [paymentMethod, setPaymentMethod] = useState("easypaisa");
   const [accountNumber, setAccountNumber] = useState("");
   
+  const [convertAmount, setConvertAmount] = useState(0);
+
   const exchangeRate = 1.0;
   const calculatedPk = (withdrawAmount * exchangeRate).toFixed(2);
 
@@ -114,6 +116,11 @@ export default function WalletPage() {
     depositFunds(amount, id);
     setPaymentId("");
   }
+  
+  const handleConvert = () => {
+    convertWinningsToFunds(convertAmount);
+    setConvertAmount(0);
+  };
 
   const filteredTransactions = transactions.filter(tx => activeTab === 'history' && tx.type === historyFilter);
 
@@ -132,7 +139,7 @@ export default function WalletPage() {
 
        <div className="flex gap-2">
         <SecondaryButton label="History" icon={History} active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
-        <SecondaryButton label="Convert" icon={Repeat} onClick={() => {}}/>
+        <SecondaryButton label="Convert" icon={Repeat} active={activeTab === 'convert'} onClick={() => setActiveTab('convert')}/>
         <SecondaryButton label="Share" icon={Share2} onClick={() => {}}/>
       </div>
 
@@ -231,9 +238,37 @@ export default function WalletPage() {
                 >
                   Withdraw
                 </Button>
+                 <Button
+                  onClick={() => setHistoryFilter('convert')}
+                  variant={historyFilter === 'convert' ? 'default' : 'secondary'}
+                  className={cn("flex-1 rounded-full", historyFilter === 'convert' && "bg-orange-500 hover:bg-orange-600")}
+                >
+                  Convert
+                </Button>
               </div>
               <TransactionList transactions={filteredTransactions} />
              </div>
+          )}
+          {activeTab === 'convert' && (
+            <div className="space-y-6 text-center">
+              <h2 className="text-3xl font-bold flex items-center justify-center gap-2">Convert Balance</h2>
+               <Image 
+                src="https://placehold.co/200x150.png"
+                data-ai-hint="balance conversion illustration"
+                alt="Convert Balance"
+                width={200}
+                height={150}
+                className="mx-auto rounded-lg"
+              />
+              <p className="text-muted-foreground">
+                Convert your winning balance into deposit balance and reuse it to participate in upcoming matches.
+              </p>
+               <div className="space-y-2 text-left">
+                <Label htmlFor="convertAmount" className="text-lg">Enter Amount</Label>
+                <Input id="convertAmount" type="number" placeholder="Enter diamond amount" className="bg-background h-12 text-lg" value={convertAmount} onChange={(e) => setConvertAmount(Number(e.target.value))} />
+              </div>
+              <Button size="lg" className="w-full bg-green-600 text-white font-bold hover:bg-green-700 h-12" onClick={handleConvert}>CONVERT</Button>
+            </div>
           )}
         </CardContent>
       </Card>
