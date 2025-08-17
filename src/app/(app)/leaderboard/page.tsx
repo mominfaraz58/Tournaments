@@ -1,5 +1,6 @@
+import { Gem, Trophy } from "lucide-react";
+
 import { LEADERBOARD } from "@/lib/constants";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -9,50 +10,49 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Rank1, Rank2, Rank3 } from "@/components/rank-icons";
+
+function Rank({ rank }: { rank: number }) {
+  if (rank === 1) return <Rank1 />;
+  if (rank === 2) return <Rank2 />;
+  if (rank === 3) return <Rank3 />;
+  return <span className="font-bold text-yellow-400">#{rank}</span>;
+}
 
 export default function LeaderboardPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-headline">Victory Fire Clash S1 Leaderboard</CardTitle>
+    <Card className="bg-transparent border-0 shadow-none">
+      <CardHeader className="text-center p-4">
+        <CardTitle className="font-headline text-3xl flex items-center justify-center gap-2 text-yellow-400">
+          <Trophy className="size-8" /> Top 20 Players
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[80px] text-center">Rank</TableHead>
-              <TableHead>Player</TableHead>
-              <TableHead className="text-center">Kills</TableHead>
-              <TableHead className="text-right">Points</TableHead>
+            <TableRow className="border-b-2 border-muted-foreground">
+              <TableHead className="w-[60px] text-center font-bold text-lg text-foreground">#</TableHead>
+              <TableHead className="font-bold text-lg text-foreground">Name</TableHead>
+              <TableHead className="text-right font-bold text-lg text-foreground">Winnings</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {LEADERBOARD.map((entry) => (
-              <TableRow key={entry.rank} className="font-medium">
+              <TableRow key={entry.rank} className="font-medium border-b border-muted">
                 <TableCell className="text-center">
-                  <Badge 
-                    variant={entry.rank <= 3 ? "default" : "secondary"}
-                    className={`text-lg h-8 w-8 flex items-center justify-center rounded-full ${
-                      entry.rank === 1 ? 'bg-primary text-primary-foreground' : 
-                      entry.rank === 2 ? 'bg-orange-400 text-black' :
-                      entry.rank === 3 ? 'bg-yellow-600 text-white' : ''
-                    }`}
-                  >
-                    {entry.rank}
-                  </Badge>
+                  <Rank rank={entry.rank} />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-4">
-                    <Avatar>
-                      <AvatarImage src={`https://i.pravatar.cc/40?u=${entry.playerName}`} alt={entry.playerName} />
-                      <AvatarFallback>{entry.playerName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-bold">{entry.playerName}</span>
+                    <span className="font-bold text-lg">{entry.playerName}</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-center text-lg text-muted-foreground">{entry.kills}</TableCell>
-                <TableCell className="text-right text-lg font-bold text-primary">{entry.points.toLocaleString()}</TableCell>
+                <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2 text-lg font-bold text-cyan-400">
+                        {entry.points.toLocaleString()}
+                        <Gem className="size-4" />
+                    </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -34,12 +34,15 @@ export const TOURNAMENTS: Tournament[] = [
 ];
 
 export const LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, playerName: 'ProGamerPK', playerAvatar: '/avatars/01.png', kills: 152, points: 4800 },
-  { rank: 2, playerName: 'LahoriLion', playerAvatar: '/avatars/02.png', kills: 145, points: 4650 },
-  { rank: 3, playerName: 'KarachiKing', playerAvatar: '/avatars/03.png', kills: 138, points: 4500 },
-  { rank: 4, playerName: 'Sniper_Sultan', playerAvatar: '/avatars/04.png', kills: 130, points: 4300 },
-  { rank: 5, playerName: 'SilentKiller', playerAvatar: '/avatars/05.png', kills: 125, points: 4150 },
-  { rank: 6, playerName: 'PindiPhantom', playerAvatar: '/avatars/01.png', kills: 120, points: 4000 },
-  { rank: 7, playerName: 'QuettaGladiator', playerAvatar: '/avatars/02.png', kills: 115, points: 3850 },
-  { rank: 8, playerName: 'HeadshotMaster', playerAvatar: '/avatars/03.png', kills: 110, points: 3700 },
+  { rank: 1, playerName: 'Galaxy', points: 1556 },
+  { rank: 2, playerName: 'TEHZEEB HAIDER', points: 795 },
+  { rank: 3, playerName: 'NBL ADIL', points: 782 },
+  { rank: 4, playerName: 'Hashim Qureshi', points: 608 },
+  { rank: 5, playerName: 'Ali Jutt', points: 595 },
+  { rank: 6, playerName: 'waseh', points: 515 },
+  { rank: 7, playerName: 'abubakar', points: 501 },
+  { rank: 8, playerName: 'KAMRAN', points: 485 },
+  { rank: 9, playerName: 'Gareeboo', points: 440 },
+  { rank: 10, playerName: 'LOƧT☯ƧAI3I♪7', points: 360 },
+  { rank: 11, playerName: 'RT | SKYE ☁', points: 355 },
 ];

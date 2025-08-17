@@ -12,8 +12,6 @@ export type Tournament = {
 export type LeaderboardEntry = {
   rank: number;
   playerName: string;
-  playerAvatar: string;
-  kills: number;
   points: number;
 };
 
