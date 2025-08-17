@@ -9,11 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth-provider";
 
 const Step = ({ icon: Icon, label }: { icon: React.ElementType, label: string }) => (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 text-center">
         <div className="bg-primary/10 p-3 rounded-full">
             <Icon className="size-8 text-primary" />
         </div>
-        <span className="font-semibold text-sm">{label}</span>
+        <span className="font-semibold text-xs">{label}</span>
     </div>
 );
 
@@ -63,17 +63,17 @@ export default function ReferPage() {
 
                     <div className="space-y-4">
                         <h3 className="text-lg font-bold text-primary">♦ HOW DOES REFER WORK? ♦</h3>
-                        <div className="flex justify-around items-center">
+                        <div className="flex justify-around items-start">
                            <Step icon={UserPlus} label="User Register"/>
-                           <ArrowRight className="text-primary size-8" />
+                           <ArrowRight className="text-primary size-8 mt-5" />
                            <Step icon={Gift} label="Join Match"/>
-                           <ArrowRight className="text-primary size-8" />
+                           <ArrowRight className="text-primary size-8 mt-5" />
                            <Step icon={Trophy} label="Get Reward"/>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-4 max-w-xs mx-auto">
-                        <Button size="lg" className="w-full font-bold bg-foreground text-background hover:bg-gray-300">REFER NOW</Button>
+                        <Button size="lg" className="w-full font-bold bg-white text-black hover:bg-gray-200">REFER NOW</Button>
                         <Button size="lg" className="w-full font-bold bg-green-600 hover:bg-green-700">REFER LIST</Button>
                     </div>
 
