@@ -1,6 +1,6 @@
 import { Gem, Trophy } from "lucide-react";
 
-import { LEADERBOARD } from "@/lib/constants";
+import { getLeaderboard } from "@/lib/users";
 import {
   Table,
   TableBody,
@@ -19,7 +19,9 @@ function Rank({ rank }: { rank: number }) {
   return <span className="font-bold text-yellow-400">#{rank}</span>;
 }
 
-export default function LeaderboardPage() {
+export default async function LeaderboardPage() {
+  const leaderboard = await getLeaderboard();
+  
   return (
     <Card className="bg-transparent border-0 shadow-none">
       <CardHeader className="text-center p-4">
@@ -37,7 +39,7 @@ export default function LeaderboardPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {LEADERBOARD.map((entry) => (
+            {leaderboard.map((entry) => (
               <TableRow key={entry.rank} className="font-medium border-b border-muted">
                 <TableCell className="text-center">
                   <Rank rank={entry.rank} />

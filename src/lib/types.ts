@@ -9,6 +9,12 @@ export type Tournament = {
   imageHint: string;
 };
 
+export type User = {
+  id: string;
+  name: string;
+  winnings: number;
+};
+
 export type LeaderboardEntry = {
   rank: number;
   playerName: string;
