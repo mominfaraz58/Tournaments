@@ -81,6 +81,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                     newFunds += transaction.amount;
                 } else if (transaction.type === 'withdraw') {
                     newWinnings -= transaction.amount;
+                } else if (transaction.type === 'admin_grant') {
+                    newWinnings += transaction.amount;
                 }
 
                 t.update(userRef, { funds: newFunds, winnings: newWinnings });
