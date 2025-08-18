@@ -3,7 +3,7 @@
 
 import { useToast } from "@/hooks/use-toast";
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot, writeBatch, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "./auth-provider";
 import type { Transaction, User } from "@/lib/types";
@@ -60,9 +60,44 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const q = query(transactionsRef, where("userId", "==", user.id));
     const unsubscribeTransactions = onSnapshot(q, (querySnapshot) => {
       const userTransactions: Transaction[] = [];
-      querySnapshot.forEach((doc) => {
-        userTransactions.push({ id: doc.id, ...doc.data() } as Transaction);
+      const batch = writeBatch(db);
+       let requiresUpdate = false;
+
+      querySnapshot.forEach((docSnap) => {
+        const transaction = { id: docSnap.id, ...docSnap.data() } as Transaction;
+        userTransactions.push(transaction);
+
+        if (transaction.status === 'approved' && !transaction.processed) {
+            requiresUpdate = true;
+            const userRef = doc(db, 'users', transaction.userId);
+
+             runTransaction(db, async (t) => {
+                const userDoc = await t.get(userRef);
+                if (!userDoc.exists()) throw "User document does not exist!";
+                
+                const userData = userDoc.data() as User;
+                let newFunds = userData.funds;
+                let newWinnings = userData.winnings;
+
+                if (transaction.type === 'deposit') {
+                    newFunds += transaction.amount;
+                } else if (transaction.type === 'withdraw') {
+                    newWinnings -= transaction.amount;
+                }
+
+                t.update(userRef, { funds: newFunds, winnings: newWinnings });
+                t.update(doc(db, 'transactions', transaction.id), { processed: true });
+            }).then(() => {
+                 toast({
+                    title: `Transaction Approved`,
+                    description: `Your ${transaction.type} of ${transaction.amount} has been processed.`,
+                });
+            }).catch(err => {
+                console.error("Transaction failed: ", err);
+            });
+        }
       });
+      
       // Sort transactions by date, most recent first
       userTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setTransactions(userTransactions);
@@ -74,14 +109,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeUser();
       unsubscribeTransactions();
     };
-  }, [user]);
+  }, [user, toast]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date' | 'userId'>) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date' | 'userId' | 'processed'>) => {
     if (!user) return null;
     const newTransaction = {
       ...transaction,
       userId: user.id,
       date: new Date().toISOString(),
+      processed: false,
     };
     const docRef = await addDoc(collection(db, "transactions"), newTransaction);
     return { id: docRef.id, ...newTransaction } as Transaction;
@@ -128,7 +164,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const newFunds = funds - fee;
     await updateDoc(userRef, { funds: newFunds });
     
-    await addTransaction({ type: 'entry_fee', amount: fee, status: 'approved' });
+    await addTransaction({ type: 'entry_fee', amount: fee, status: 'approved', processed: true });
     toast({
       title: "Registration Successful",
       description: `You have been registered. Rs. ${fee} has been deducted from your wallet.`,
@@ -144,7 +180,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const newMatchesWon = matchesWon + 1;
     await updateDoc(userRef, { winnings: newDiamonds, matchesWon: newMatchesWon });
     
-    await addTransaction({ type: 'win', amount: prize, status: 'approved' });
+    await addTransaction({ type: 'win', amount: prize, status: 'approved', processed: true });
     toast({
       title: "Match Won!",
       description: `You won ${prize} diamonds! They have been added to your winning balance.`,
@@ -168,7 +204,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     await updateDoc(userRef, { winnings: newDiamonds, funds: newFunds });
     
-    await addTransaction({ type: 'convert', amount, status: 'approved' });
+    await addTransaction({ type: 'convert', amount, status: 'approved', processed: true });
     toast({
       title: "Conversion Successful",
       description: `${amount} diamonds have been converted to your deposit balance.`,

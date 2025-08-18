@@ -41,4 +41,5 @@ export type Transaction = {
   date: string;
   details?: string;
   status: 'pending' | 'approved' | 'rejected';
+  processed?: boolean;
 };
