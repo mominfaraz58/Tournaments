@@ -1,5 +1,6 @@
 
 
+
 export type Tournament = {
   id: string;
   name: string;
@@ -22,6 +23,7 @@ export type User = {
   winnings: number;
   funds: number;
   matchesWon: number;
+  status: 'active' | 'pending' | 'blocked';
 };
 
 

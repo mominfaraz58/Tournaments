@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -38,12 +39,12 @@ export default function LoginPage() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setError(null);
-    const success = await login(values.mobileNo, values.password);
-    if (success) {
+    const result = await login(values.mobileNo, values.password);
+    if (result.success) {
       toast({ title: "Login Successful", description: "Welcome back!" });
       router.push("/tournaments");
     } else {
-      setError("Invalid mobile number or password. Please try again.");
+      setError(result.message);
     }
   };
 

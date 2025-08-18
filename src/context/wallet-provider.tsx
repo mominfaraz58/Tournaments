@@ -15,7 +15,7 @@ interface WalletState {
   transactions: Transaction[];
   loading: boolean;
   depositFunds: (amount: number, paymentId: string) => Promise<void>;
-  withdrawDiamonds: (amount: number, gameId: string) => Promise<void>;
+  withdrawDiamonds: (amount: number, accountNumber: string) => Promise<void>;
   registerForTournament: (fee: number) => Promise<boolean>;
   addMatchWin: (prize: number) => Promise<void>;
   convertWinningsToFunds: (amount: number) => Promise<void>;
@@ -76,13 +76,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date' | 'status' | 'userId'> & { status?: 'pending' | 'approved' | 'rejected' }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date' | 'userId'>) => {
     if (!user) return null;
     const newTransaction = {
       ...transaction,
       userId: user.id,
       date: new Date().toISOString(),
-      status: transaction.status || 'approved', // default to approved unless specified
     };
     const docRef = await addDoc(collection(db, "transactions"), newTransaction);
     return { id: docRef.id, ...newTransaction } as Transaction;
@@ -129,7 +128,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const newFunds = funds - fee;
     await updateDoc(userRef, { funds: newFunds });
     
-    await addTransaction({ type: 'entry_fee', amount: fee });
+    await addTransaction({ type: 'entry_fee', amount: fee, status: 'approved' });
     toast({
       title: "Registration Successful",
       description: `You have been registered. Rs. ${fee} has been deducted from your wallet.`,
@@ -145,7 +144,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const newMatchesWon = matchesWon + 1;
     await updateDoc(userRef, { winnings: newDiamonds, matchesWon: newMatchesWon });
     
-    await addTransaction({ type: 'win', amount: prize });
+    await addTransaction({ type: 'win', amount: prize, status: 'approved' });
     toast({
       title: "Match Won!",
       description: `You won ${prize} diamonds! They have been added to your winning balance.`,
@@ -169,7 +168,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     await updateDoc(userRef, { winnings: newDiamonds, funds: newFunds });
     
-    await addTransaction({ type: 'convert', amount });
+    await addTransaction({ type: 'convert', amount, status: 'approved' });
     toast({
       title: "Conversion Successful",
       description: `${amount} diamonds have been converted to your deposit balance.`,

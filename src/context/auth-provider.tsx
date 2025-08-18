@@ -11,8 +11,8 @@ import type { User } from "@/lib/types";
 interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (mobileNo: string, password: string) => Promise<boolean>;
-  register: (userData: Omit<User, 'id' | 'referralCode' | 'winnings' | 'funds' | 'matchesWon'>) => Promise<boolean>;
+  login: (mobileNo: string, password: string) => Promise<{success: boolean, message: string}>;
+  register: (userData: Omit<User, 'id' | 'referralCode' | 'winnings' | 'funds' | 'matchesWon' | 'status'>) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const login = async (mobileNo: string, password: string): Promise<boolean> => {
+  const login = async (mobileNo: string, password: string): Promise<{success: boolean, message: string}> => {
     setLoading(true);
     try {
       const usersRef = collection(db, "users");
@@ -52,21 +52,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!querySnapshot.empty) {
         const userDoc = querySnapshot.docs[0];
         const userData = { id: userDoc.id, ...userDoc.data() } as User;
+
+        if (userData.status !== 'active') {
+           return { success: false, message: `Your account is currently ${userData.status}. Please contact support.` };
+        }
+
         setUser(userData);
         sessionStorage.setItem("user", JSON.stringify(userData));
         router.push("/tournaments");
-        return true;
+        return { success: true, message: "Login Successful" };
       }
-      return false;
+      return { success: false, message: "Invalid mobile number or password." };
     } catch (e) {
       console.error("Login failed: ", e);
-      return false;
+      return { success: false, message: "An error occurred during login." };
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (userData: Omit<User, 'id' | 'referralCode' | 'winnings' | 'funds' | 'matchesWon'>): Promise<boolean> => {
+  const register = async (userData: Omit<User, 'id' | 'referralCode' | 'winnings' | 'funds' | 'matchesWon' | 'status'>): Promise<boolean> => {
      setLoading(true);
     try {
       const usersRef = collection(db, "users");
@@ -91,7 +96,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             referralCode: generateReferralCode(),
             winnings: 0,
             funds: 0,
-            matchesWon: 0
+            matchesWon: 0,
+            status: 'active'
         };
 
         const docRef = await addDoc(collection(db, "users"), newUser);
