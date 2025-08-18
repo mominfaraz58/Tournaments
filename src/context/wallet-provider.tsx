@@ -80,7 +80,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 let newWinnings = userData.winnings;
 
                 if (transaction.type === 'deposit') {
-                    newFunds += transaction.amount;
+                    newWinnings += transaction.amount;
                 } else if (transaction.type === 'withdraw') {
                     newWinnings -= transaction.amount;
                 }
