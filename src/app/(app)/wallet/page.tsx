@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -68,17 +69,51 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
     );
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved': return 'text-green-500';
+      case 'pending': return 'text-yellow-500';
+      case 'rejected': return 'text-red-500';
+      default: return 'text-gray-500';
+    }
+  }
+
+  const getAmountColor = (type: string) => {
+     switch (type) {
+      case 'deposit':
+      case 'win':
+      case 'convert':
+        return 'text-green-500';
+      default:
+        return 'text-red-500';
+    }
+  }
+
+  const getAmountPrefix = (type: string) => {
+    switch (type) {
+      case 'deposit':
+      case 'win':
+      case 'convert':
+        return '+';
+      default:
+        return '-';
+    }
+  }
+
   return (
     <div className="space-y-3">
       {transactions.map((tx) => (
-        <Card key={tx.id} className="p-4 flex justify-between items-center">
+        <Card key={tx.id} className="p-4 flex justify-between items-center bg-background">
           <div>
-            <p className="font-bold capitalize">{tx.type}</p>
+            <p className="font-bold capitalize flex items-center gap-2">{tx.type.replace('_', ' ')}</p>
             <p className="text-sm text-muted-foreground">{new Date(tx.date).toLocaleString()}</p>
             <p className="text-xs text-muted-foreground">ID: {tx.id}</p>
           </div>
-          <div className={`font-bold text-lg ${tx.type === 'deposit' || tx.type === 'convert' ? 'text-green-500' : 'text-red-500'}`}>
-            {tx.type === 'deposit' || tx.type === 'convert' ? '+' : '-'} {tx.amount.toLocaleString()} <Gem className="inline size-4"/>
+          <div className="text-right">
+             <div className={`font-bold text-lg ${getAmountColor(tx.type)}`}>
+              {getAmountPrefix(tx.type)} {tx.amount.toLocaleString()} <Gem className="inline size-4"/>
+            </div>
+            <p className={`text-sm font-semibold capitalize ${getStatusColor(tx.status)}`}>{tx.status}</p>
           </div>
         </Card>
       ))}
@@ -89,11 +124,9 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
 export default function WalletPage() {
   const { funds, diamonds, withdrawDiamonds, depositFunds, transactions, convertWinningsToFunds } = useWallet();
   const [activeTab, setActiveTab] = useState("deposit");
-  const [historyFilter, setHistoryFilter] = useState<"deposit" | "withdraw" | "convert">("deposit");
 
-  const [depositType, setDepositType] = useState("paymentId");
+  const [depositAmount, setDepositAmount] = useState(100);
   const [paymentId, setPaymentId] = useState("");
-  const [addDiamondAmount, setAddDiamondAmount] = useState(100);
 
   const [withdrawAmount, setWithdrawAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("easypaisa");
@@ -105,15 +138,14 @@ export default function WalletPage() {
   const calculatedPk = (withdrawAmount * exchangeRate).toFixed(2);
 
   const handleWithdraw = () => {
-    withdrawDiamonds(withdrawAmount, `acc: ${accountNumber} (${paymentMethod})`);
+    withdrawDiamonds(withdrawAmount, `${paymentMethod}: ${accountNumber}`);
     setWithdrawAmount(0);
     setAccountNumber("");
   };
 
   const handleDeposit = () => {
-    const amount = depositType === 'addDiamond' ? addDiamondAmount : 100; // Assuming payment ID corresponds to a fixed amount for now
-    const id = paymentId || `diamond_${Date.now()}`;
-    depositFunds(amount, id);
+    depositFunds(depositAmount, paymentId);
+    setDepositAmount(100);
     setPaymentId("");
   }
   
@@ -122,10 +154,8 @@ export default function WalletPage() {
     setConvertAmount(0);
   };
 
-  const filteredTransactions = transactions.filter(tx => activeTab === 'history' && tx.type === historyFilter);
-
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2">
         <InfoCard title="Deposit Balance" value={funds.toLocaleString()} icon={Landmark} valueIcon={CircleDollarSign} />
         <InfoCard title="Winning Balance" value={diamonds.toLocaleString()} icon={ShieldCheck} valueIcon={Gem} />
@@ -149,17 +179,6 @@ export default function WalletPage() {
             <div className="space-y-6 text-center">
               <h2 className="text-3xl font-bold flex items-center justify-center gap-2">DEPOSIT <Gem className="text-cyan-400"/></h2>
 
-              <RadioGroup defaultValue="paymentId" onValueChange={setDepositType} className="flex justify-center gap-6">
-                <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="paymentId" id="paymentId" />
-                    <Label htmlFor="paymentId" className="text-lg">Payment ID</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="addDiamond" id="addDiamond" />
-                    <Label htmlFor="addDiamond" className="text-lg">Add Diamond</Label>
-                </div>
-              </RadioGroup>
-
               <Image 
                 src="https://placehold.co/300x200.png"
                 data-ai-hint="payment illustration"
@@ -172,12 +191,16 @@ export default function WalletPage() {
               <p className="text-muted-foreground text-sm">
                 First, contact the admin and complete your payment. After the payment is made, the admin will provide you with a Payment ID. Enter this Payment ID on the "Deposit <Gem className="inline size-3 text-cyan-400"/>" page. Coins will be credited to your account once the Payment ID is verified and found to be valid.
               </p>
-
-              {depositType === 'paymentId' ? (
-                 <Input type="text" placeholder="Payment ID" className="bg-background text-center h-12 text-lg" value={paymentId} onChange={(e) => setPaymentId(e.target.value)} />
-              ) : (
-                <Input type="number" placeholder="Enter diamond amount" className="bg-background text-center h-12 text-lg" value={addDiamondAmount} onChange={(e) => setAddDiamondAmount(Number(e.target.value))} />
-              )}
+              
+               <div className="space-y-2 text-left">
+                <Label htmlFor="depositAmount">Amount (PKR)</Label>
+                <Input id="depositAmount" type="number" placeholder="Enter amount" className="bg-background text-center h-12 text-lg" value={depositAmount} onChange={(e) => setDepositAmount(Number(e.target.value))} />
+              </div>
+              
+               <div className="space-y-2 text-left">
+                <Label htmlFor="paymentId">Payment ID</Label>
+                <Input id="paymentId" type="text" placeholder="Enter Payment ID from Admin" className="bg-background text-center h-12 text-lg" value={paymentId} onChange={(e) => setPaymentId(e.target.value)} />
+              </div>
              
               <Button size="lg" className="w-full bg-foreground text-background font-bold hover:bg-gray-300 h-12" onClick={handleDeposit}>SUBMIT</Button>
 
@@ -223,30 +246,7 @@ export default function WalletPage() {
           {activeTab === 'history' && (
              <div className="space-y-6 text-center">
               <h2 className="text-3xl font-bold">Transactions History</h2>
-               <div className="flex gap-2">
-                <Button 
-                  onClick={() => setHistoryFilter('deposit')} 
-                  variant={historyFilter === 'deposit' ? 'default' : 'secondary'}
-                  className={cn("flex-1 rounded-full", historyFilter === 'deposit' && "bg-orange-500 hover:bg-orange-600")}
-                >
-                  Deposit
-                </Button>
-                <Button 
-                  onClick={() => setHistoryFilter('withdraw')}
-                  variant={historyFilter === 'withdraw' ? 'default' : 'secondary'}
-                  className={cn("flex-1 rounded-full", historyFilter === 'withdraw' && "bg-orange-500 hover:bg-orange-600")}
-                >
-                  Withdraw
-                </Button>
-                 <Button
-                  onClick={() => setHistoryFilter('convert')}
-                  variant={historyFilter === 'convert' ? 'default' : 'secondary'}
-                  className={cn("flex-1 rounded-full", historyFilter === 'convert' && "bg-orange-500 hover:bg-orange-600")}
-                >
-                  Convert
-                </Button>
-              </div>
-              <TransactionList transactions={filteredTransactions} />
+              <TransactionList transactions={transactions} />
              </div>
           )}
           {activeTab === 'convert' && (

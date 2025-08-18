@@ -3,10 +3,10 @@
 
 import { useToast } from "@/hooks/use-toast";
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "./auth-provider";
-import type { Transaction } from "@/lib/types";
+import type { Transaction, User } from "@/lib/types";
 
 interface WalletState {
   funds: number;
@@ -33,56 +33,75 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchWalletData = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      };
-      setLoading(true);
-      const userRef = doc(db, "users", user.id);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
+    if (!user) {
+      setLoading(false);
+      setFunds(0);
+      setDiamonds(0);
+      setMatchesWon(0);
+      setTransactions([]);
+      return;
+    };
+
+    setLoading(true);
+    // Set up a real-time listener for the user's document
+    const userRef = doc(db, "users", user.id);
+    const unsubscribeUser = onSnapshot(userRef, (doc) => {
+      if (doc.exists()) {
+        const userData = doc.data() as User;
         setFunds(userData.funds || 0);
         setDiamonds(userData.winnings || 0);
         setMatchesWon(userData.matchesWon || 0);
       }
-      // Fetch transactions if needed, for now we keep it simple
       setLoading(false);
-    };
+    });
 
-    fetchWalletData();
+    // Set up a real-time listener for transactions
+    const transactionsRef = collection(db, "transactions");
+    const q = query(transactionsRef, where("userId", "==", user.id));
+    const unsubscribeTransactions = onSnapshot(q, (querySnapshot) => {
+      const userTransactions: Transaction[] = [];
+      querySnapshot.forEach((doc) => {
+        userTransactions.push({ id: doc.id, ...doc.data() } as Transaction);
+      });
+      // Sort transactions by date, most recent first
+      userTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setTransactions(userTransactions);
+    });
+
+
+    // Cleanup listeners on component unmount
+    return () => {
+      unsubscribeUser();
+      unsubscribeTransactions();
+    };
   }, [user]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'date' | 'id'>) => {
-    if (!user) return;
-    const newTransaction = { 
-      ...transaction, 
-      date: new Date().toISOString(),
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date' | 'status' | 'userId'> & { status?: 'pending' | 'approved' | 'rejected' }) => {
+    if (!user) return null;
+    const newTransaction = {
+      ...transaction,
       userId: user.id,
-      status: 'pending' // For admin panel review
+      date: new Date().toISOString(),
+      status: transaction.status || 'approved', // default to approved unless specified
     };
-    await addDoc(collection(db, "transactions"), newTransaction);
-    // You might want to update local transaction state as well
+    const docRef = await addDoc(collection(db, "transactions"), newTransaction);
+    return { id: docRef.id, ...newTransaction } as Transaction;
   }
 
   const depositFunds = async (amount: number, paymentId: string) => {
-    // This should be an admin-only operation. 
-    // The current implementation is for demonstration.
-    // In a real app, an admin would verify the payment and then trigger a function to add funds.
     if(!user) return;
-    const userRef = doc(db, "users", user.id);
-    const newFunds = funds + amount;
-    await updateDoc(userRef, { funds: newFunds });
-    setFunds(newFunds);
-    await addTransaction({ type: 'deposit', amount, details: `Payment ID: ${paymentId}` });
+     if (amount <= 0 || !paymentId) {
+      toast({ variant: "destructive", title: "Deposit Request Failed", description: "Please enter a valid amount and payment ID." });
+      return;
+    }
+    await addTransaction({ type: 'deposit', amount, details: `Payment ID: ${paymentId}`, status: 'pending' });
     toast({
       title: "Deposit Request Submitted",
       description: `Your request for Rs. ${amount} has been sent for verification.`,
     });
   };
 
-  const withdrawDiamonds = async (amount: number, gameId: string) => {
+  const withdrawDiamonds = async (amount: number, accountNumber: string) => {
     if (!user) return;
     if (amount <= 0) {
        toast({ variant: "destructive", title: "Withdrawal Failed", description: "Please enter a valid amount." });
@@ -93,9 +112,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    await addTransaction({ type: 'withdraw', amount, details: gameId });
-    // In a real app, the diamond balance would only be updated after admin approval.
-    // For now, we'll leave it as an optimistic update locally, but the transaction is logged for admin.
+    await addTransaction({ type: 'withdraw', amount, details: accountNumber, status: 'pending' });
     toast({
       title: "Withdrawal Request Submitted",
       description: `Your request to withdraw ${amount} diamonds has been sent for approval.`,
@@ -111,7 +128,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const userRef = doc(db, "users", user.id);
     const newFunds = funds - fee;
     await updateDoc(userRef, { funds: newFunds });
-    setFunds(newFunds);
+    
     await addTransaction({ type: 'entry_fee', amount: fee });
     toast({
       title: "Registration Successful",
@@ -127,8 +144,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const newDiamonds = diamonds + prize;
     const newMatchesWon = matchesWon + 1;
     await updateDoc(userRef, { winnings: newDiamonds, matchesWon: newMatchesWon });
-    setDiamonds(newDiamonds);
-    setMatchesWon(newMatchesWon);
+    
     await addTransaction({ type: 'win', amount: prize });
     toast({
       title: "Match Won!",
@@ -152,9 +168,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const newFunds = funds + amount;
 
     await updateDoc(userRef, { winnings: newDiamonds, funds: newFunds });
-    setDiamonds(newDiamonds);
-    setFunds(newFunds);
-
+    
     await addTransaction({ type: 'convert', amount });
     toast({
       title: "Conversion Successful",
