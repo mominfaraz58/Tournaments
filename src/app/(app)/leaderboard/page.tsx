@@ -1,6 +1,9 @@
-import { Gem, Trophy } from "lucide-react";
 
-import { getLeaderboard } from "@/lib/users";
+import { Gem, Trophy } from "lucide-react";
+import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
+
+import { db } from "@/lib/firebase";
+import type { User } from "@/lib/types";
 import {
   Table,
   TableBody,
@@ -18,6 +21,24 @@ function Rank({ rank }: { rank: number }) {
   if (rank === 3) return <Rank3 />;
   return <span className="font-bold text-yellow-400">#{rank}</span>;
 }
+
+async function getLeaderboard() {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, orderBy("winnings", "desc"), limit(20));
+    const querySnapshot = await getDocs(q);
+
+    const leaderboard: { rank: number; playerName: string; points: number }[] = [];
+    querySnapshot.forEach((doc, index) => {
+        const user = doc.data() as User;
+        leaderboard.push({
+            rank: index + 1,
+            playerName: user.inGameName,
+            points: user.winnings,
+        });
+    });
+    return leaderboard;
+}
+
 
 export default async function LeaderboardPage() {
   const leaderboard = await getLeaderboard();
