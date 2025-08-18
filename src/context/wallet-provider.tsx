@@ -60,15 +60,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const q = query(transactionsRef, where("userId", "==", user.id));
     const unsubscribeTransactions = onSnapshot(q, (querySnapshot) => {
       const userTransactions: Transaction[] = [];
-      const batch = writeBatch(db);
-       let requiresUpdate = false;
-
+      
       querySnapshot.forEach((docSnap) => {
         const transaction = { id: docSnap.id, ...docSnap.data() } as Transaction;
         userTransactions.push(transaction);
 
-        if (transaction.status === 'approved' && !transaction.processed) {
-            requiresUpdate = true;
+        if ((transaction.status === 'approved' || transaction.status === 'Approve') && !transaction.processed) {
             const userRef = doc(db, 'users', transaction.userId);
 
              runTransaction(db, async (t) => {
@@ -80,7 +77,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 let newWinnings = userData.winnings;
 
                 if (transaction.type === 'deposit') {
-                    newWinnings += transaction.amount;
+                    newFunds += transaction.amount;
                 } else if (transaction.type === 'withdraw') {
                     newWinnings -= transaction.amount;
                 }
@@ -94,6 +91,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 });
             }).catch(err => {
                 console.error("Transaction failed: ", err);
+                 toast({
+                    variant: "destructive",
+                    title: `Transaction Failed`,
+                    description: `Could not process your ${transaction.type} of ${transaction.amount}.`,
+                });
             });
         }
       });
