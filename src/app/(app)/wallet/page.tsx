@@ -72,6 +72,7 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved': return 'text-green-500';
+      case 'Approve': return 'text-green-500';
       case 'pending': return 'text-yellow-500';
       case 'rejected': return 'text-red-500';
       default: return 'text-gray-500';
@@ -83,6 +84,7 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
       case 'deposit':
       case 'win':
       case 'convert':
+      case 'share_received':
         return 'text-green-500';
       default:
         return 'text-red-500';
@@ -94,6 +96,7 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
       case 'deposit':
       case 'win':
       case 'convert':
+      case 'share_received':
         return '+';
       default:
         return '-';
@@ -105,7 +108,7 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
       {transactions.map((tx) => (
         <Card key={tx.id} className="p-4 flex justify-between items-center bg-background">
           <div>
-            <p className="font-bold capitalize flex items-center gap-2">{tx.type.replace('_', ' ')}</p>
+            <p className="font-bold capitalize flex items-center gap-2">{tx.type.replace(/_/g, ' ')}</p>
             <p className="text-sm text-muted-foreground">{new Date(tx.date).toLocaleString()}</p>
             <p className="text-xs text-muted-foreground">ID: {tx.id}</p>
           </div>
@@ -122,7 +125,7 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
 }
 
 export default function WalletPage() {
-  const { funds, diamonds, withdrawDiamonds, depositFunds, transactions, convertWinningsToFunds } = useWallet();
+  const { funds, diamonds, withdrawDiamonds, depositFunds, transactions, convertWinningsToFunds, shareDiamonds } = useWallet();
   const [activeTab, setActiveTab] = useState("deposit");
 
   const [depositAmount, setDepositAmount] = useState(100);
@@ -133,6 +136,9 @@ export default function WalletPage() {
   const [accountNumber, setAccountNumber] = useState("");
   
   const [convertAmount, setConvertAmount] = useState(0);
+
+  const [shareAmount, setShareAmount] = useState(0);
+  const [shareRecipient, setShareRecipient] = useState("");
 
   const exchangeRate = 1.0;
   const calculatedPk = (withdrawAmount * exchangeRate).toFixed(2);
@@ -153,6 +159,12 @@ export default function WalletPage() {
     convertWinningsToFunds(convertAmount);
     setConvertAmount(0);
   };
+  
+  const handleShare = () => {
+    shareDiamonds(shareRecipient, shareAmount);
+    setShareAmount(0);
+    setShareRecipient("");
+  }
 
   return (
     <div className="space-y-4">
@@ -170,7 +182,7 @@ export default function WalletPage() {
        <div className="flex gap-2">
         <SecondaryButton label="History" icon={History} active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
         <SecondaryButton label="Convert" icon={Repeat} active={activeTab === 'convert'} onClick={() => setActiveTab('convert')}/>
-        <SecondaryButton label="Share" icon={Share2} onClick={() => {}}/>
+        <SecondaryButton label="Share" icon={Share2} active={activeTab === 'share'} onClick={() => setActiveTab('share')}/>
       </div>
 
       <Card className="bg-card/80 rounded-2xl">
@@ -268,6 +280,27 @@ export default function WalletPage() {
                 <Input id="convertAmount" type="number" placeholder="Enter diamond amount" className="bg-background h-12 text-lg" value={convertAmount} onChange={(e) => setConvertAmount(Number(e.target.value))} />
               </div>
               <Button size="lg" className="w-full bg-green-600 text-white font-bold hover:bg-green-700 h-12" onClick={handleConvert}>CONVERT</Button>
+            </div>
+          )}
+           {activeTab === 'share' && (
+            <div className="space-y-6 text-center">
+              <h2 className="text-3xl font-bold flex items-center justify-center gap-2">Share <Gem className="text-cyan-400"/> With Friends</h2>
+              <Gem className="size-24 text-cyan-400 mx-auto" />
+              <p className="text-muted-foreground">
+                You are allowed to share only your winning balance with other players.
+              </p>
+               <div className="space-y-2 text-left">
+                  <Label htmlFor="shareRecipient">Account Number</Label>
+                  <div className="relative flex items-center">
+                      <span className="absolute left-3 text-muted-foreground">+92</span>
+                      <Input id="shareRecipient" type="text" placeholder="3123456789" className="bg-background h-12 text-lg pl-12" value={shareRecipient} onChange={(e) => setShareRecipient(e.target.value)} />
+                  </div>
+              </div>
+               <div className="space-y-2 text-left">
+                <Label htmlFor="shareAmount" className="text-lg">Amount</Label>
+                <Input id="shareAmount" type="number" placeholder="Enter diamond amount" className="bg-background h-12 text-lg" value={shareAmount} onChange={(e) => setShareAmount(Number(e.target.value))} />
+              </div>
+              <Button size="lg" className="w-full bg-green-600 text-white font-bold hover:bg-green-700 h-12" onClick={handleShare}>Share Now</Button>
             </div>
           )}
         </CardContent>

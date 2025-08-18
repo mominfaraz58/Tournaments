@@ -19,6 +19,7 @@ interface WalletState {
   registerForTournament: (fee: number) => Promise<boolean>;
   addMatchWin: (prize: number) => Promise<void>;
   convertWinningsToFunds: (amount: number) => Promise<void>;
+  shareDiamonds: (recipientMobileNo: string, amount: number) => Promise<void>;
 }
 
 const WalletContext = createContext<WalletState | undefined>(undefined);
@@ -113,11 +114,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user, toast]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date' | 'userId' | 'processed'>) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date' | 'processed'>) => {
     if (!user) return null;
     const newTransaction = {
       ...transaction,
-      userId: user.id,
       date: new Date().toISOString(),
       processed: false,
     };
@@ -131,7 +131,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       toast({ variant: "destructive", title: "Deposit Request Failed", description: "Please enter a valid amount and payment ID." });
       return;
     }
-    await addTransaction({ type: 'deposit', amount, details: `Payment ID: ${paymentId}`, status: 'pending' });
+    await addTransaction({ userId: user.id, type: 'deposit', amount, details: `Payment ID: ${paymentId}`, status: 'pending' });
     toast({
       title: "Deposit Request Submitted",
       description: `Your request for Rs. ${amount} has been sent for verification.`,
@@ -149,7 +149,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    await addTransaction({ type: 'withdraw', amount, details: accountNumber, status: 'pending' });
+    await addTransaction({ userId: user.id, type: 'withdraw', amount, details: accountNumber, status: 'pending' });
     toast({
       title: "Withdrawal Request Submitted",
       description: `Your request to withdraw ${amount} diamonds has been sent for approval.`,
@@ -166,7 +166,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const newFunds = funds - fee;
     await updateDoc(userRef, { funds: newFunds });
     
-    await addTransaction({ type: 'entry_fee', amount: fee, status: 'approved', processed: true });
+    await addTransaction({ userId: user.id, type: 'entry_fee', amount: fee, status: 'approved', processed: true });
     toast({
       title: "Registration Successful",
       description: `You have been registered. Rs. ${fee} has been deducted from your wallet.`,
@@ -182,7 +182,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const newMatchesWon = matchesWon + 1;
     await updateDoc(userRef, { winnings: newDiamonds, matchesWon: newMatchesWon });
     
-    await addTransaction({ type: 'win', amount: prize, status: 'approved', processed: true });
+    await addTransaction({ userId: user.id, type: 'win', amount: prize, status: 'approved', processed: true });
     toast({
       title: "Match Won!",
       description: `You won ${prize} diamonds! They have been added to your winning balance.`,
@@ -206,16 +206,104 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     await updateDoc(userRef, { winnings: newDiamonds, funds: newFunds });
     
-    await addTransaction({ type: 'convert', amount, status: 'approved', processed: true });
+    await addTransaction({ userId: user.id, type: 'convert', amount, status: 'approved', processed: true });
     toast({
       title: "Conversion Successful",
       description: `${amount} diamonds have been converted to your deposit balance.`,
     });
   };
 
+   const shareDiamonds = async (recipientMobileNo: string, amount: number) => {
+    if (!user) return;
+    const fullMobileNo = `+92${recipientMobileNo}`;
+
+    if (amount <= 0) {
+      toast({ variant: "destructive", title: "Transfer Failed", description: "Please enter a valid amount." });
+      return;
+    }
+    if (amount > diamonds) {
+      toast({ variant: "destructive", title: "Transfer Failed", description: "Insufficient winning balance." });
+      return;
+    }
+     if (fullMobileNo === user.mobileNo) {
+      toast({ variant: "destructive", title: "Transfer Failed", description: "You cannot send diamonds to yourself." });
+      return;
+    }
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("mobileNo", "==", fullMobileNo));
+        const recipientSnapshot = await getDocs(q);
+
+        if (recipientSnapshot.empty) {
+          throw new Error("Recipient not found.");
+        }
+
+        const recipientDoc = recipientSnapshot.docs[0];
+        const recipient = { id: recipientDoc.id, ...recipientDoc.data() } as User;
+        const recipientRef = doc(db, "users", recipient.id);
+
+        const senderRef = doc(db, "users", user.id);
+        const senderDoc = await transaction.get(senderRef);
+        if (!senderDoc.exists()) {
+            throw new Error("Sender not found");
+        }
+        const senderData = senderDoc.data() as User;
+        
+        if (senderData.winnings < amount) {
+             throw new Error("Insufficient winning balance.");
+        }
+
+        // Deduct from sender
+        transaction.update(senderRef, { winnings: senderData.winnings - amount });
+        
+        // Add to recipient
+        transaction.update(recipientRef, { winnings: recipient.winnings + amount });
+
+        // Log transactions for both users
+        const transactionsCollection = collection(db, 'transactions');
+        const timestamp = new Date().toISOString();
+
+        // Sender's transaction log
+        transaction.set(doc(transactionsCollection), {
+            userId: user.id,
+            type: 'share_sent',
+            amount,
+            date: timestamp,
+            details: `Sent to ${recipient.fullName} (${recipient.mobileNo})`,
+            status: 'approved',
+            processed: true
+        });
+
+        // Recipient's transaction log
+        transaction.set(doc(transactionsCollection), {
+            userId: recipient.id,
+            type: 'share_received',
+            amount,
+            date: timestamp,
+            details: `Received from ${user.fullName} (${user.mobileNo})`,
+            status: 'approved',
+            processed: true
+        });
+      });
+
+      toast({
+        title: "Transfer Successful",
+        description: `${amount} diamonds have been sent to ${fullMobileNo}.`,
+      });
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Transfer Failed",
+        description: error.message || "An error occurred during the transfer.",
+      });
+    }
+  };
+
   return (
     <WalletContext.Provider
-      value={{ funds, diamonds, matchesWon, transactions, loading, depositFunds, withdrawDiamonds, registerForTournament, addMatchWin, convertWinningsToFunds }}
+      value={{ funds, diamonds, matchesWon, transactions, loading, depositFunds, withdrawDiamonds, registerForTournament, addMatchWin, convertWinningsToFunds, shareDiamonds }}
     >
       {children}
     </WalletContext.Provider>

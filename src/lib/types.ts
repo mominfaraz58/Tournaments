@@ -1,6 +1,7 @@
 
 
 
+
 export type Tournament = {
   id: string;
   name: string;
@@ -36,10 +37,10 @@ export type LeaderboardEntry = {
 export type Transaction = {
   id: string;
   userId: string;
-  type: 'deposit' | 'withdraw' | 'convert' | 'entry_fee' | 'win';
+  type: 'deposit' | 'withdraw' | 'convert' | 'entry_fee' | 'win' | 'share_sent' | 'share_received';
   amount: number;
   date: string;
   details?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'Approve';
   processed?: boolean;
 };
