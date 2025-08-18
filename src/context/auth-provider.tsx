@@ -3,16 +3,16 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import type { User } from "@/lib/types";
 
-// This is a placeholder for real authentication logic.
-// In a real application, you would use a library like NextAuth.js or Firebase Auth.
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   login: (mobileNo: string, password: string) => Promise<boolean>;
-  register: (userData: Omit<User, 'id' | 'referralCode' | 'winnings'>) => Promise<boolean>;
+  register: (userData: Omit<User, 'id' | 'referralCode' | 'winnings' | 'funds' | 'matchesWon'>) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -29,74 +29,81 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is logged in (e.g., from localStorage)
     try {
-      const storedUser = localStorage.getItem("user");
+      const storedUser = sessionStorage.getItem("user");
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
-      localStorage.removeItem("user");
+      console.error("Failed to parse user from sessionStorage", error);
+      sessionStorage.removeItem("user");
     } finally {
       setLoading(false);
     }
   }, []);
 
   const login = async (mobileNo: string, password: string): Promise<boolean> => {
-    // In a real app, you'd call your API here.
-    // We'll simulate by checking localStorage.
     setLoading(true);
     try {
-      const storedUsersRaw = localStorage.getItem("users");
-      const storedUsers = storedUsersRaw ? JSON.parse(storedUsersRaw) : [];
-      const foundUser = storedUsers.find(
-        (u: User) => u.mobileNo === mobileNo && u.password === password
-      );
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("mobileNo", "==", mobileNo), where("password", "==", password));
+      const querySnapshot = await getDocs(q);
       
-      if (foundUser) {
-        setUser(foundUser);
-        localStorage.setItem("user", JSON.stringify(foundUser));
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        const userData = { id: userDoc.id, ...userDoc.data() } as User;
+        setUser(userData);
+        sessionStorage.setItem("user", JSON.stringify(userData));
         router.push("/tournaments");
         return true;
       }
       return false;
-    } catch(e) {
+    } catch (e) {
+      console.error("Login failed: ", e);
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (userData: Omit<User, 'id' | 'referralCode' | 'winnings'>): Promise<boolean> => {
-    // In a real app, you'd call your API here.
-    // We'll simulate by adding to localStorage.
+  const register = async (userData: Omit<User, 'id' | 'referralCode' | 'winnings' | 'funds' | 'matchesWon'>): Promise<boolean> => {
      setLoading(true);
     try {
-        const storedUsersRaw = localStorage.getItem("users");
-        const storedUsers = storedUsersRaw ? JSON.parse(storedUsersRaw) : [];
-        
-        const existingUser = storedUsers.find((u: User) => u.mobileNo === userData.mobileNo || u.uid === userData.uid);
-        if (existingUser) {
-            console.error("User with this mobile number or UID already exists.");
-            return false;
-        }
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("mobileNo", "==", userData.mobileNo));
+      const querySnapshot = await getDocs(q);
 
-        const newUser: User = {
+      if (!querySnapshot.empty) {
+        console.error("User with this mobile number already exists.");
+        return false;
+      }
+      
+      const q2 = query(usersRef, where("uid", "==", userData.uid));
+      const querySnapshot2 = await getDocs(q2);
+
+       if (!querySnapshot2.empty) {
+        console.error("User with this UID already exists.");
+        return false;
+      }
+
+        const newUser: Omit<User, 'id'> = {
             ...userData,
-            id: `user_${Date.now()}`,
             referralCode: generateReferralCode(),
             winnings: 0,
+            funds: 0,
+            matchesWon: 0
         };
 
-        storedUsers.push(newUser);
-        localStorage.setItem("users", JSON.stringify(storedUsers));
-        setUser(newUser);
-        localStorage.setItem("user", JSON.stringify(newUser));
+        const docRef = await addDoc(collection(db, "users"), newUser);
+        
+        const userWithId = { ...newUser, id: docRef.id };
+        setUser(userWithId);
+        sessionStorage.setItem("user", JSON.stringify(userWithId));
         router.push("/tournaments");
         return true;
     } catch(e) {
-        return false;
+      console.error("Registration failed: ", e);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -104,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     router.push("/auth/login");
   };
 

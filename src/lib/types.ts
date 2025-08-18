@@ -1,3 +1,4 @@
+
 export type Tournament = {
   id: string;
   name: string;
@@ -15,9 +16,11 @@ export type User = {
   inGameName: string;
   uid: string;
   mobileNo: string;
-  password?: string; // Should not be stored in client-side state long-term
+  password?: string;
   referralCode: string;
   winnings: number;
+  funds: number;
+  matchesWon: number;
 };
 
 
@@ -29,8 +32,10 @@ export type LeaderboardEntry = {
 
 export type Transaction = {
   id: string;
-  type: 'deposit' | 'withdraw' | 'convert';
+  userId: string;
+  type: 'deposit' | 'withdraw' | 'convert' | 'entry_fee' | 'win';
   amount: number;
   date: string;
   details?: string;
+  status: 'pending' | 'approved' | 'rejected';
 };

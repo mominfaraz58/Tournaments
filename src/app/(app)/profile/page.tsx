@@ -88,7 +88,7 @@ export default function ProfilePage() {
     <div className="space-y-6">
       <div className="flex flex-col items-center text-center space-y-2">
         <Avatar className="w-24 h-24 text-4xl bg-primary">
-          <AvatarFallback>{user.fullName.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarFallback>{user.fullName?.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
         <h1 className="text-2xl font-bold">{user.fullName}</h1>
         <p className="text-muted-foreground">{user.mobileNo}</p>
